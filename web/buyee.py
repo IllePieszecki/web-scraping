@@ -1,16 +1,14 @@
-from selenium import webdriver
-from selenium.webdriver import Chrome, Edge, Firefox
-from selenium.webdriver.edge.service import Service as EdgeService
-from webdriver_manager.microsoft import EdgeChromiumDriverManager
-import time
-from selenium.webdriver.common.by import By
-from components.web_page import WebPage
-from components.driver_browser import Browser
 import os
+
 from dotenv import load_dotenv
+from selenium.webdriver.common.by import By
+
+from components.driver_browser import Browser
+from components.web_page import WebPage
+from components.store_page import Stores
 
 
-class Buyee(WebPage, Browser):
+class Buyee(WebPage, Browser, Stores):
     def __init__(self):
         # Inicializa la clase base
         self.initialize_browser()
@@ -30,11 +28,12 @@ class Buyee(WebPage, Browser):
 
         self.wait_page(2)
 
+    def extract_products(self):
         self.driver.get("https://buyee.jp/mybaggages/shipped/1")
         self.wait_for_element("#luggageInfo_collection")
 
         first_order = self.find('#luggageInfo_collection li')
-        first_order.find_element(By.CSS_SELECTOR,".g-feather-chevron-up").click()
+        first_order.find_element(By.CSS_SELECTOR, ".g-feather-chevron-up").click()
 
         order_table = first_order.find_element(By.CSS_SELECTOR, "table.luggageInfo_order")
         products = order_table.find_elements('css selector', 'tbody tr:nth-child(n+2)')
@@ -45,14 +44,27 @@ class Buyee(WebPage, Browser):
             row_data = [col.text for col in columns]
             page_origin = row_data[0]
             link = columns[2].find_element(By.TAG_NAME, 'a').get_attribute('href')
-            print(link)
+            print(page_origin, '>>>', link)
 
+            match page_origin:
+                case 'mercari':
+                    self.mercari()
+                case 'Yahoo! Japan Auction':
+                    self.yahoo()
+                case 'PayPay Flea market':
+                    self.flea_market()
+                case 'JYP JAPAN ONLINE STORE':
+                    self.jyp()
 
-        self.close()
+    def order_extract(self):
+        self.login()
+        self.extract_products()
+
 
     def close(self):
         self.driver.quit()
 
 
 buyee = Buyee()  # Inicializa Buyee
-buyee.login()
+# buyee.login()
+buyee.order_extract()
