@@ -45,3 +45,5 @@ class WebPage:
             )
         except:
             print(f"the element '{element}' is not existent yet")
+
+

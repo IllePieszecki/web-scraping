@@ -1,19 +1,23 @@
 import os
+from io import BytesIO
+from PIL import Image
+from docx import Document
+from docx.shared import Inches
 
-from dotenv import load_dotenv
 from selenium.webdriver.common.by import By
+from components.env import Config
 
 from components.driver_browser import Browser
 from components.web_page import WebPage
-from components.store_page import Stores
 
 
-class Buyee(WebPage, Browser, Stores):
+
+class Buyee(WebPage, Browser, Config):
     def __init__(self):
         # Inicializa la clase base
         self.initialize_browser()
+        self.load_environment_variables()
         WebPage.__init__(self, self.driver)
-        load_dotenv()
 
     def login(self):
         self.driver.get("https://buyee.jp/")
@@ -37,29 +41,91 @@ class Buyee(WebPage, Browser, Stores):
 
         order_table = first_order.find_element(By.CSS_SELECTOR, "table.luggageInfo_order")
         products = order_table.find_elements('css selector', 'tbody tr:nth-child(n+2)')
-        print(len(products))
+        # print(len(products))
 
         for product in products:
             columns = product.find_elements(By.TAG_NAME, 'td')
             row_data = [col.text for col in columns]
             page_origin = row_data[0]
+            order_num = row_data[1]
             link = columns[2].find_element(By.TAG_NAME, 'a').get_attribute('href')
-            print(page_origin, '>>>', link)
 
             match page_origin:
                 case 'mercari':
-                    self.mercari()
+                    self._mercari(link, order_num)
                 case 'Yahoo! Japan Auction':
-                    self.yahoo()
+                    self._yahoo(link, order_num)
                 case 'PayPay Flea market':
-                    self.flea_market()
+                    pass
                 case 'JYP JAPAN ONLINE STORE':
-                    self.jyp()
+                    self._jyp(link, order_num)
+                case _:
+                    print(f'La página de origen "{page_origin}" no esta programada...')
+
+    def _mercari(self, link: str, order_num: str):
+        self.__change_tab(link, '#content_wrap', '.m-goodsButton', order_num)
+
+    def _yahoo(self, link: str, order_num: str):
+        self.__change_tab(link, '#content_wrap', '#auction_item_description', order_num)
+
+    def _flea_market(self, link: str):
+        pass
+
+    def _jyp(self, link: str, order_num: str):
+        self.__change_tab(link, '#breadcrumb', 'h2.section-heading span', order_num)
+
+    def __change_tab(self, href_value: str, header: str, footer: str, order_num: str):
+        self.driver.execute_script(f"window.open('{href_value}', '_blank');")
+        self.driver.switch_to.window(self.driver.window_handles[1])
+        header = self.find(header)
+        footer = self.find(footer)
+
+        x_left = header.rect['x']
+        x_right = header.rect['width'] + x_left + 50
+        y_right = footer.rect['y'] - header.rect['y']  # tenia la x
+
+        self.driver.execute_script("arguments[0].scrollIntoView();", header)
+        self.wait_page(2)
+        self.__take_screenshot(order_num + '.jpg', x_left, x_right, y_right)
+        self.wait_page(3)
+        self.driver.close()  # Cierra la ventana actual
+        self.driver.switch_to.window(self.driver.window_handles[0])
+
+    def __take_screenshot(self, filename: str, x_left: float, x_right: float, y_right: float):
+        # print(f"{x_left},0,{x_right},{y_right}")
+        screenshot_path = os.getenv('IMAGE_PATH', '.')
+        full_path = os.path.join(screenshot_path, filename)
+        screenshot = self.driver.get_screenshot_as_png()
+        screenshot = Image.open(BytesIO(screenshot))
+        #                                     left_arriba / arriba / right_arriba / abajo
+        cropped_screenshot = screenshot.crop((x_left, 0, x_right, y_right))
+        cropped_screenshot.save(full_path)
+
+    def create_doc(self):
+        doc = Document()
+        doc_path = os.getenv('IMAGE_PATH', '.')
+        full_path = os.path.join(doc_path, 'output.docx')
+
+        for filename in os.listdir(doc_path):
+            if filename.endswith(".png") or filename.endswith(".jpg") or filename.endswith(".jpeg"):
+                # Ruta completa de la imagen
+                image_path = os.path.join(doc_path, filename)
+
+                # Insertar imagen en el documento
+                doc.add_picture(image_path, width=Inches(7))  # Ajustar el ancho de la imagen
+
+                # Agregar un espacio después de la imagen
+                doc.add_paragraph("\n")
+
+        doc.save(full_path)
+        print(f"Documento guardado como: {full_path}")
+
 
     def order_extract(self):
-        self.login()
-        self.extract_products()
-
+        # self.login()
+        # self.extract_products()
+        # self.close()
+        self.create_doc()
 
     def close(self):
         self.driver.quit()
