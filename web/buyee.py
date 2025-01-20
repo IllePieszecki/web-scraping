@@ -1,3 +1,4 @@
+
 import os
 from io import BytesIO
 from PIL import Image
@@ -9,7 +10,7 @@ from components.env import Config
 
 from components.driver_browser import Browser
 from components.web_page import WebPage
-
+from datetime import date
 
 
 class Buyee(WebPage, Browser, Config):
@@ -36,6 +37,8 @@ class Buyee(WebPage, Browser, Config):
         self.driver.get("https://buyee.jp/mybaggages/shipped/1")
         self.wait_for_element("#luggageInfo_collection")
 
+        self.__delete_image_files(os.getenv('IMAGE_PATH', '.'))
+
         first_order = self.find('#luggageInfo_collection li')
         first_order.find_element(By.CSS_SELECTOR, ".g-feather-chevron-up").click()
 
@@ -54,6 +57,8 @@ class Buyee(WebPage, Browser, Config):
                 case 'mercari':
                     self._mercari(link, order_num)
                 case 'Yahoo! Japan Auction':
+                    self._yahoo(link, order_num)
+                case 'JDirectItems Auction':
                     self._yahoo(link, order_num)
                 case 'PayPay Flea market':
                     pass
@@ -75,14 +80,15 @@ class Buyee(WebPage, Browser, Config):
         self.__change_tab(link, '#breadcrumb', 'h2.section-heading span', order_num)
 
     def __change_tab(self, href_value: str, header: str, footer: str, order_num: str):
+
         self.driver.execute_script(f"window.open('{href_value}', '_blank');")
         self.driver.switch_to.window(self.driver.window_handles[1])
         header = self.find(header)
         footer = self.find(footer)
 
         x_left = header.rect['x']
-        x_right = header.rect['width'] + x_left + 50
-        y_right = footer.rect['y'] - header.rect['y']  # tenia la x
+        x_right = header.rect['width'] + x_left + 30
+        y_right = footer.rect['y'] - header.rect['y']
 
         self.driver.execute_script("arguments[0].scrollIntoView();", header)
         self.wait_page(2)
@@ -90,6 +96,15 @@ class Buyee(WebPage, Browser, Config):
         self.wait_page(3)
         self.driver.close()  # Cierra la ventana actual
         self.driver.switch_to.window(self.driver.window_handles[0])
+
+    def __delete_image_files(self, image_path: str):
+        for filename in os.listdir(image_path):
+            if filename.endswith(".png") or filename.endswith(".jpg"):
+                file_path = os.path.join(image_path, filename)
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    print(f"Error al eliminar el archivo {file_path}: {e}")
 
     def __take_screenshot(self, filename: str, x_left: float, x_right: float, y_right: float):
         # print(f"{x_left},0,{x_right},{y_right}")
@@ -102,29 +117,28 @@ class Buyee(WebPage, Browser, Config):
         cropped_screenshot.save(full_path)
 
     def create_doc(self):
+        today = date.today()
+        doc_name = 'Buyee_' + today.strftime("%d_%m_%Y") + '.docx'
         doc = Document()
         doc_path = os.getenv('IMAGE_PATH', '.')
-        full_path = os.path.join(doc_path, 'output.docx')
+        full_path = os.path.join(doc_path, doc_name)
 
         for filename in os.listdir(doc_path):
             if filename.endswith(".png") or filename.endswith(".jpg") or filename.endswith(".jpeg"):
                 # Ruta completa de la imagen
                 image_path = os.path.join(doc_path, filename)
-
                 # Insertar imagen en el documento
                 doc.add_picture(image_path, width=Inches(7))  # Ajustar el ancho de la imagen
-
                 # Agregar un espacio después de la imagen
                 doc.add_paragraph("\n")
 
         doc.save(full_path)
         print(f"Documento guardado como: {full_path}")
 
-
     def order_extract(self):
-        # self.login()
-        # self.extract_products()
-        # self.close()
+        self.login()
+        self.extract_products()
+        self.close()
         self.create_doc()
 
     def close(self):
@@ -132,5 +146,4 @@ class Buyee(WebPage, Browser, Config):
 
 
 buyee = Buyee()  # Inicializa Buyee
-# buyee.login()
 buyee.order_extract()
