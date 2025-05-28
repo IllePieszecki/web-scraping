@@ -1,8 +1,8 @@
+from .web_page import WebPage
 
-
-class Stores():
-    def mercari(self):
-        pass
+class Stores(WebPage):
+    def mercari(self, element: str):
+        self.scroll_to_element(self.find(element))
 
     def yahoo(self):
         pass

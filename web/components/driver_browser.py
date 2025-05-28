@@ -7,7 +7,7 @@ import time
 from selenium.webdriver.common.by import By
 
 
-class Browser:
+class Browser():
     def __init__(self):
         self.driver = None
 

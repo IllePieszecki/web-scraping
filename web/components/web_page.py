@@ -45,3 +45,6 @@ class WebPage:
             )
         except:
             print(f"the element '{element}' is not existent yet")
+
+    def scroll_to_element(self, element: str):
+        self.driver.execute_script("arguments[0].scrollIntoView();", element)
