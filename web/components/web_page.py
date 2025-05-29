@@ -12,6 +12,9 @@ class WebPage:
     def find(self, element: str):
         return self.driver.find_element(By.CSS_SELECTOR, element)
 
+    def find_all(self, element: str):
+        return self.driver.find_elements(By.CSS_SELECTOR, element)
+
     def wait_page(self, seconds: int):
         time.sleep(seconds)
 
