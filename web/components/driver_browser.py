@@ -6,6 +6,7 @@ from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.firefox import GeckoDriverManager
 from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
 import time
 from selenium.webdriver.common.by import By
 import os
@@ -25,6 +26,10 @@ class Browser():
             self.driver.maximize_window()
             self.driver.implicitly_wait(2)
         elif browser == "chrome":
-            self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")  #
+
+            self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
+                                           options=chrome_options)
             self.driver.maximize_window()
             self.driver.implicitly_wait(2)

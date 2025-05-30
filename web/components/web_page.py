@@ -12,6 +12,9 @@ class WebPage:
     def find(self, element: str):
         return self.driver.find_element(By.CSS_SELECTOR, element)
 
+    def find_xpath(self, element: str):
+        return self.driver.find_element(By.XPATH, element)
+
     def find_all(self, element: str):
         return self.driver.find_elements(By.CSS_SELECTOR, element)
 
