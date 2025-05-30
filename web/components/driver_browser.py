@@ -21,15 +21,18 @@ class Browser():
         """Función para inicializar el navegador (driver)"""
         browser = os.environ.get("BROWSER")
 
-        if browser == 'firefox':
-            self.driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()))
-            self.driver.maximize_window()
-            self.driver.implicitly_wait(2)
-        elif browser == "chrome":
-            chrome_options = Options()
-            chrome_options.add_argument("--headless")  #
+        match browser:
+            case 'firefox':
+                self.driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()))
+                self.driver.maximize_window()
+                self.driver.implicitly_wait(2)
+            case "chrome":
+                chrome_options = Options()
+                chrome_options.add_argument("--headless")  #
 
-            self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
-                                           options=chrome_options)
-            self.driver.maximize_window()
-            self.driver.implicitly_wait(2)
+                self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
+                                               options=chrome_options)
+                self.driver.maximize_window()
+                self.driver.implicitly_wait(2)
+            case _:
+                raise "A browser wasn't selected"
