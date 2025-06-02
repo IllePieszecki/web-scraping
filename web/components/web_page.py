@@ -3,6 +3,7 @@ import time
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.remote.webelement import WebElement
 
 
 class WebPage:
@@ -15,8 +16,11 @@ class WebPage:
     def find_xpath(self, element: str):
         return self.driver.find_element(By.XPATH, element)
 
-    def find_all(self, element: str):
-        return self.driver.find_elements(By.CSS_SELECTOR, element)
+    def find_all(self, element: str, context: WebElement = None):
+        if context is None:
+            return self.driver.find_elements(By.CSS_SELECTOR, element)
+        return context.find_elements(By.CSS_SELECTOR, element)
+
 
     def wait_page(self, seconds: int):
         time.sleep(seconds)

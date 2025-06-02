@@ -30,8 +30,10 @@ class Browser():
                 chrome_options = Options()
                 chrome_options.add_argument("--headless")  #
 
-                self.driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()),
-                                               options=chrome_options)
+                self.driver = webdriver.Chrome(
+                    service=ChromeService(ChromeDriverManager().install())
+                    # ,options=chrome_options
+                )
                 self.driver.maximize_window()
                 self.driver.implicitly_wait(2)
             case _:

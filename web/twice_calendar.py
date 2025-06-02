@@ -1,5 +1,5 @@
 import re
-
+import json
 from web.components.driver_browser import Browser
 from web.components.web_page import WebPage
 from selenium.webdriver.support.ui import Select
@@ -13,27 +13,59 @@ class TwiceScheduleCalendar(Browser, WebPage):
         twice_calendar = {}
         self.open_browser()
 
-        years = self.extract_years()
-        for year in years.options:
-            year = year.get_attribute('value')
-            print('>',year)
+        try:
 
-            months = self.extract_months()
-            for month in months:
-                month = month.get_attribute('id')
+            years = self.extract_years()
+            year_select = Select(years)
 
-                print('>>',month)
+            for year_option in year_select.options:
+                year = year_option.get_attribute('value')
+                print('>',year)
+
+                year_select.select_by_value(year)
+                self.wait_page(2)
+
+                twice_calendar[year] = {}
+
+                months = self.extract_months()
+                for month in months:
+                    month = month.get_attribute('id')
+                    self.find(f'#{month}').click()
+                    self.wait_page(2)
+
+                    print('>>',month)
+                    twice_calendar[year][month] = {}
+
+                    days = self.extract_days()
+                    for index, day in enumerate(days):
+                        day = day.get_attribute('id')
+                        day_name = int(day.removeprefix('calendar-weeks-').strip())+1
+
+                        twice_calendar[year][month][day_name] = {}
+
+                        activities = self.extract_activities(day)
+                        print('len_activities: ',len(activities))
+
+                        if len(activities)>0:
+                            for activity in activities:
+                                print('   inactivities....')
+                                if not 'display: none' in activity.get_attribute("style"):
+                                    activity = activity.text.strip()
+                                    if len(activity)>0:
+                                        twice_calendar[year][month][day_name][activity] = {}
+
+            print(json.dumps(twice_calendar,indent=2))
+
+        except Exception as e:
+            raise f"Error extracting information: {e}"
 
     def open_browser(self):
         self.driver.get("https://twicehub.com/twice")
-        self.wait_page(3)
-        self.find("#mobile").click()
+        self.wait_page(1)
 
     def extract_years(self):
         year_selector = self.find('#header_calendar_year')
-        year_select = Select(year_selector)
-
-        return year_select
+        return year_selector
 
     def extract_months(self):
         months_buttons = self.find_all('#header_calendar3 table tr td')
@@ -43,7 +75,15 @@ class TwiceScheduleCalendar(Browser, WebPage):
         return months
 
     def extract_days(self):
-        days_list = self.find_all('#mobileTable')
+        days_list = self.find_all('#calendar div')
+        pattern = re.compile(r'^calendar-weeks-\d{1,2}$')
+        weeks = [week for week in days_list if pattern.match(week.get_attribute('id'))]
+
+        return weeks
+
+    def extract_activities(self, element: str):
+        activites_list = self.find_all(f'#{element} button')
+        return activites_list
 
 
     def close(self):
@@ -56,22 +96,3 @@ if __name__ == '__main__':
     finally:
         twice.close()
 
-'''
-import json
-
-twice_calendar = {}
-
-year = 2025
-month = 10
-day = 31
-activity = 'TTT Season2'
-
-twice_calendar[year] = {}
-twice_calendar[year][month] = {}
-twice_calendar[year][month][day] = {"1":"activity"}
-twice_calendar[year][month][day] = {"activity"}
-
-
-
-print(json.dumps(twice_calendar, indent=2))
-'''
