@@ -1,5 +1,6 @@
 import re
 import json
+import os
 from web.components.driver_browser import Browser
 from web.components.web_page import WebPage
 from selenium.webdriver.support.ui import Select
@@ -54,12 +55,19 @@ class TwiceScheduleCalendar(Browser, WebPage):
                                         }
                                         twice_calendar.append(event)
 
-            with open('web/files/twice_calendar.json', 'w', encoding='utf-8') as f:
-                json.dump(twice_calendar, f, ensure_ascii=False, indent=2)
-
+            self.update_json_file(twice_calendar)
 
         except Exception as e:
             raise Exception(f"Error extracting information: {e}")
+
+    def update_json_file(self, twice_calendar):
+        base_path = os.path.dirname(os.path.abspath(__file__))  # Ruta del script actual
+        json_path = os.path.join(base_path, 'files', 'twice_calendar.json')
+
+        os.makedirs(os.path.dirname(json_path), exist_ok=True)
+
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(twice_calendar, f, ensure_ascii=False, indent=2)
 
     def open_browser(self):
         self.driver.get("https://twicehub.com/twice")

@@ -1,4 +1,5 @@
 import re
+import os
 import json
 from web.components.driver_browser import Browser
 from web.components.web_page import WebPage
@@ -52,6 +53,10 @@ class TwiceScheduleCalendar(Browser, WebPage):
                                     if len(activity)>0:
                                         twice_calendar[year][month][day_name][activity] = {}
 
+            base_path = os.path.dirname(os.path.abspath(__file__))  # Ruta del script actual
+            json_path = os.path.join(base_path, 'files', 'twice_calendar.json')
+
+            os.makedirs(os.path.dirname(json_path), exist_ok=True)
             with open('web/files/twice_calendar.json', 'w', encoding='utf-8') as f:
                 json.dump(twice_calendar, f, ensure_ascii=False, indent=2)
 
