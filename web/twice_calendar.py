@@ -1,63 +1,73 @@
 import re
 import json
+import os
 from web.components.driver_browser import Browser
 from web.components.web_page import WebPage
 from selenium.webdriver.support.ui import Select
 
-
 class TwiceScheduleCalendar(Browser, WebPage):
     def __init__(self):
         self.initialize_browser()
-
-    def extract_information(self):
-        twice_calendar = {}
         self.open_browser()
 
-        try:
+    def extract_information(self):
+        twice_calendar = []
 
+        try:
             years = self.extract_years()
             year_select = Select(years)
 
             for year_option in year_select.options:
                 year = year_option.get_attribute('value')
-                print('>',year)
 
                 year_select.select_by_value(year)
-                self.wait_page(2)
+                self.wait_page(1)
 
-                twice_calendar[year] = {}
-
+                print('year: ',year)
                 months = self.extract_months()
                 for month in months:
                     month = month.get_attribute('id')
                     self.find(f'#{month}').click()
                     self.wait_page(2)
 
-                    print('>>',month)
-                    twice_calendar[year][month] = {}
-
+                    month = month[-2:]
                     days = self.extract_days()
+
                     for index, day in enumerate(days):
                         day = day.get_attribute('id')
                         day_name = int(day.removeprefix('calendar-weeks-').strip())+1
 
-                        twice_calendar[year][month][day_name] = {}
+                        print(f' year: {year}, month: {month}, day: {day_name}')
 
                         activities = self.extract_activities(day)
-                        print('len_activities: ',len(activities))
 
                         if len(activities)>0:
                             for activity in activities:
-                                print('   inactivities....')
                                 if not 'display: none' in activity.get_attribute("style"):
                                     activity = activity.text.strip()
                                     if len(activity)>0:
-                                        twice_calendar[year][month][day_name][activity] = {}
 
-            print(json.dumps(twice_calendar,indent=2))
+                                        event = {
+                                            "year": year,
+                                            "month": month,
+                                            "day": day_name,
+                                            "event": activity
+                                        }
+                                        twice_calendar.append(event)
+
+            self.update_json_file(twice_calendar)
 
         except Exception as e:
-            raise f"Error extracting information: {e}"
+            raise Exception(f"Error extracting information: {e}")
+
+    def update_json_file(self, twice_calendar):
+        base_path = os.path.dirname(os.path.abspath(__file__))  # Ruta del script actual
+        json_path = os.path.join(base_path, 'files', 'twice_calendar.json')
+
+        os.makedirs(os.path.dirname(json_path), exist_ok=True)
+
+        with open(json_path, 'w', encoding='utf-8') as f:
+            json.dump(twice_calendar, f, ensure_ascii=False, indent=2)
 
     def open_browser(self):
         self.driver.get("https://twicehub.com/twice")
@@ -95,4 +105,3 @@ if __name__ == '__main__':
         twice.extract_information()
     finally:
         twice.close()
-
