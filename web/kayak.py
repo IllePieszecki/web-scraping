@@ -4,6 +4,7 @@ import time
 from components.driver_browser import Browser
 from datetime import datetime, timedelta
 from web.components.web_page import WebPage
+import json
 
 class Kayak(Browser, WebPage):
     def __init__(self):
@@ -11,8 +12,8 @@ class Kayak(Browser, WebPage):
         self.initialize_browser()
 
     def search_dates(self):
-        fecha_inicial = '2026-01-24'
-        rango_dias = 10
+        fecha_inicial = '2026-02-12'
+        rango_dias = 14
         rango_vacaciones = 16
         formato = "%Y-%m-%d"
         fecha_inicial_cf = datetime.strptime(fecha_inicial, formato)
@@ -27,13 +28,15 @@ class Kayak(Browser, WebPage):
             self.extract_flights(fecha_inicio,fecha_final,resultados)
             print('\n\n')
 
-        print(resultados)
+        self.json_show(resultados)
 
 
     def extract_flights(self, inicio: datetime, final: datetime, resultados):
         url = f'https://www.kayak.com.mx/flights/LAX-TYO/{inicio.strftime("%Y-%m-%d")}/{final.strftime("%Y-%m-%d")}/2adults?ucs=1l5lyfb&sort=bestflight_a'
         self.driver.get(url)
-        self.wait_page(4)
+
+        if 'listos' not in self.find("#hiddenAlertContainer").text:
+            self.wait_page(5)
 
         vuelos = self.find_all('.Fxw9-result-item-container')
 
@@ -59,8 +62,6 @@ class Kayak(Browser, WebPage):
                     aerolineas = self.find_all('.J0g6-operator-text', vuelo)[0].text.split('\n')
 
                     if len(vuelo_ida) > 0 and len(vuelo_vuelta) > 0:
-                        print(
-                            f'{aerolineas} {vuelo_ida[0]}{mas_1_ida} - {vuelo_ida[-3]} // {vuelo_vuelta[0]}{mas_1_vuelta} - {vuelo_vuelta[-3]} >> {precio[0]} x Persona')
                         resultados.append({
                             "fecha_inicio": inicio.strftime("%Y-%m-%d"),
                             "fecha_final": final.strftime("%Y-%m-%d"),
@@ -72,6 +73,9 @@ class Kayak(Browser, WebPage):
 
         self.driver.get(url)
         self.wait_page(2)
+
+    def json_show(self, resultados):
+        print(json.dumps(resultados, ensure_ascii=False, indent=2))
 
     def close(self):
         self.driver.quit()
